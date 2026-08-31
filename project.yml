@@ -1,0 +1,92 @@
+name: EchoVault
+
+options:
+  bundleIdPrefix: com.example
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
+    GCC_TREAT_WARNINGS_AS_ERRORS: YES
+    CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED: YES
+
+targets:
+  EchoVault:
+    type: application
+    platform: iOS
+    sources:
+      - path: EchoVault
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.EchoVault
+        PRODUCT_NAME: EchoVault
+        INFOPLIST_FILE: EchoVault/Resources/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        CODE_SIGN_STYLE: Automatic
+        MARKETING_VERSION: 1.3.0
+        CURRENT_PROJECT_VERSION: 9
+      configs:
+        Release:
+          SWIFT_OPTIMIZATION_LEVEL: -O
+          SWIFT_COMPILATION_MODE: wholemodule
+          ENABLE_TESTABILITY: NO
+          ENABLE_NS_ASSERTIONS: NO
+          COPY_PHASE_STRIP: YES
+          STRIP_INSTALLED_PRODUCT: YES
+          DEAD_CODE_STRIPPING: YES
+          VALIDATE_PRODUCT: YES
+          DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+
+  EchoVaultTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: EchoVaultTests
+        excludes:
+          - Fixtures
+      - path: EchoVaultTests/Fixtures
+        buildPhase: resources
+    dependencies:
+      - target: EchoVault
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.EchoVaultTests
+        GENERATE_INFOPLIST_FILE: YES
+
+  EchoVaultUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: EchoVaultUITests
+    dependencies:
+      - target: EchoVault
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.EchoVaultUITests
+        GENERATE_INFOPLIST_FILE: YES
+
+schemes:
+  EchoVault:
+    build:
+      targets:
+        EchoVault: all
+    run:
+      config: Release
+      debugEnabled: false
+    test:
+      config: Debug
+      targets:
+        - EchoVaultTests
+        - EchoVaultUITests
+    profile:
+      config: Release
+    analyze:
+      config: Release
+    archive:
+      config: Release
