@@ -89,6 +89,40 @@ final class PlaylistStore {
     }
 
     @discardableResult
+    func importPlaylist(_ importedPlaylist: MusicPlaylist) throws -> MusicPlaylist.ID {
+        let name = try availableImportedName(for: importedPlaylist.name)
+        let timestamp = now()
+        var references = Set<PlaylistItemReference>()
+        let items = importedPlaylist.items.compactMap { item -> PlaylistItem? in
+            let reference = PlaylistItemReference(
+                kind: item.kind,
+                referenceID: item.referenceID
+            )
+            guard references.insert(reference).inserted else {
+                return nil
+            }
+            return PlaylistItem(
+                draft: PlaylistItemDraft(
+                    kind: item.kind,
+                    referenceID: item.referenceID,
+                    title: item.title,
+                    subtitle: item.subtitle
+                )
+            )
+        }
+        let playlist = MusicPlaylist(
+            name: name,
+            items: items,
+            createdAt: timestamp,
+            updatedAt: timestamp
+        )
+        var updatedPlaylists = playlists
+        updatedPlaylists.append(playlist)
+        try save(updatedPlaylists)
+        return playlist.id
+    }
+
+    @discardableResult
     func add(_ drafts: [PlaylistItemDraft], to playlistID: MusicPlaylist.ID) throws -> Int {
         var updatedPlaylists = playlists
         guard let playlistIndex = updatedPlaylists.firstIndex(where: { $0.id == playlistID }) else {
@@ -187,6 +221,33 @@ final class PlaylistStore {
             throw PlaylistStoreError.duplicateName
         }
         return name
+    }
+
+    private func availableImportedName(for proposedName: String) throws -> String {
+        let name = proposedName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else {
+            throw PlaylistStoreError.emptyName
+        }
+        guard containsPlaylist(named: name) else {
+            return name
+        }
+
+        var copyNumber = 1
+        while true {
+            let suffix = copyNumber == 1 ? "Imported" : "Imported \(copyNumber)"
+            let candidate = "\(name) (\(suffix))"
+            if !containsPlaylist(named: candidate) {
+                return candidate
+            }
+            copyNumber += 1
+        }
+    }
+
+    private func containsPlaylist(named name: String) -> Bool {
+        playlists.contains {
+            $0.name.compare(name, options: [.caseInsensitive, .diacriticInsensitive])
+                == .orderedSame
+        }
     }
 
     private func save(_ updatedPlaylists: [MusicPlaylist]) throws {

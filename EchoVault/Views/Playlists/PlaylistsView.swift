@@ -1,10 +1,12 @@
 import SwiftUI
 
 struct PlaylistsView: View {
+    @Environment(MusicLibrary.self) private var library
     @Environment(PlaylistStore.self) private var playlistStore
 
     @State private var creationRequest: PlaylistCreationRequest?
     @State private var playlistPendingDeletion: MusicPlaylist?
+    @State private var isImportingPlaylist = false
     @State private var alert: UserFacingAlert?
 
     var body: some View {
@@ -53,6 +55,12 @@ struct PlaylistsView: View {
         .navigationTitle("Playlists")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button("Import Playlist", systemImage: "square.and.arrow.down") {
+                    isImportingPlaylist = true
+                }
+                .accessibilityIdentifier("playlist.import")
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button(action: presentCreatePlaylist) {
                     Label("New Playlist", systemImage: "plus")
@@ -60,6 +68,12 @@ struct PlaylistsView: View {
                 .accessibilityIdentifier("playlist.create")
             }
         }
+        .fileImporter(
+            isPresented: $isImportingPlaylist,
+            allowedContentTypes: [.echoVaultPlaylist],
+            allowsMultipleSelection: false,
+            onCompletion: importPlaylist
+        )
         .sheet(item: $creationRequest) { request in
             CreatePlaylistView(request: request, onCreated: {})
         }
@@ -114,6 +128,44 @@ struct PlaylistsView: View {
             )
         }
     }
+
+    private func importPlaylist(_ result: Result<[URL], any Error>) {
+        do {
+            let url = try result.get().first
+            guard let url else {
+                return
+            }
+            let accessed = url.startAccessingSecurityScopedResource()
+            defer {
+                if accessed {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
+            let fileSize = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize
+            if let fileSize, fileSize > PlaylistDocument.maximumFileSize {
+                throw PlaylistDocumentError.fileTooLarge
+            }
+            let document = try PlaylistDocument(data: Data(contentsOf: url, options: .mappedIfSafe))
+            let playlistID = try playlistStore.importPlaylist(document.playlist)
+            guard let importedPlaylist = playlistStore.playlist(id: playlistID) else {
+                throw PlaylistStoreError.playlistNotFound
+            }
+            let unavailableCount = importedPlaylist.unavailableItemCount(
+                availableTracks: library.tracks,
+                availableFolders: library.folders
+            )
+            let message =
+                unavailableCount == 0
+                ? "“\(importedPlaylist.name)” is ready to play."
+                : "“\(importedPlaylist.name)” was imported. \(unavailableCount) item(s) will become available after the matching WebDAV music is downloaded."
+            alert = UserFacingAlert(title: "Playlist imported", message: message)
+        } catch {
+            alert = UserFacingAlert(
+                title: "Could not import playlist",
+                message: error.localizedDescription
+            )
+        }
+    }
 }
 
 struct PlaylistDetailView: View {
@@ -123,6 +175,9 @@ struct PlaylistDetailView: View {
 
     let playlistID: MusicPlaylist.ID
     @State private var isAddingMusic = false
+    @State private var isExportingPlaylist = false
+    @State private var exportDocument: PlaylistDocument?
+    @State private var exportFilename = "Playlist"
     @State private var alert: UserFacingAlert?
 
     private var playlist: MusicPlaylist? {
@@ -162,6 +217,12 @@ struct PlaylistDetailView: View {
         .toolbar {
             if playlist != nil {
                 ToolbarItem(placement: .topBarTrailing) {
+                    Button("Export Playlist", systemImage: "square.and.arrow.up") {
+                        exportPlaylist()
+                    }
+                    .accessibilityIdentifier("playlist.export")
+                }
+                ToolbarItem(placement: .topBarTrailing) {
                     EditButton()
                 }
                 if #available(iOS 26.0, *) {
@@ -173,6 +234,20 @@ struct PlaylistDetailView: View {
                     }
                     .accessibilityIdentifier("playlist.detail.add")
                 }
+            }
+        }
+        .fileExporter(
+            isPresented: $isExportingPlaylist,
+            document: exportDocument,
+            contentType: .echoVaultPlaylist,
+            defaultFilename: exportFilename
+        ) { result in
+            exportDocument = nil
+            if case .failure(let error) = result {
+                alert = UserFacingAlert(
+                    title: "Could not export playlist",
+                    message: error.localizedDescription
+                )
             }
         }
         .sheet(isPresented: $isAddingMusic) {
@@ -190,6 +265,19 @@ struct PlaylistDetailView: View {
 
     private func presentMusicPicker() {
         isAddingMusic = true
+    }
+
+    private func exportPlaylist() {
+        guard let playlist else {
+            return
+        }
+        exportDocument = PlaylistDocument(
+            playlist: playlist,
+            availableTracks: library.tracks,
+            availableFolders: library.folders
+        )
+        exportFilename = PlaylistDocument.defaultFilename(for: playlist)
+        isExportingPlaylist = true
     }
 
     private func playInOrder() {

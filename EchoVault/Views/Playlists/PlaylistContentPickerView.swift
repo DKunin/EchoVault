@@ -25,7 +25,7 @@ struct PlaylistContentPickerView: View {
                             ForEach(matchingFolders) { folder in
                                 PlaylistFolderPickerRow(
                                     folder: folder,
-                                    isAdded: contains(kind: .folder, referenceID: folder.id),
+                                    isAdded: contains(folder),
                                     add: { add(.folder(folder)) }
                                 )
                             }
@@ -37,7 +37,7 @@ struct PlaylistContentPickerView: View {
                             ForEach(matchingTracks) { track in
                                 PlaylistTrackPickerRow(
                                     track: track,
-                                    isAdded: contains(kind: .track, referenceID: track.id),
+                                    isAdded: contains(track),
                                     add: { add(.track(track)) }
                                 )
                             }
@@ -92,9 +92,15 @@ struct PlaylistContentPickerView: View {
         }
     }
 
-    private func contains(kind: PlaylistItemKind, referenceID: String) -> Bool {
+    private func contains(_ folder: MusicFolder) -> Bool {
         playlist?.items.contains {
-            $0.kind == kind && $0.referenceID == referenceID
+            $0.kind == .folder && folder.matchesPlaylistReferenceID($0.referenceID)
+        } == true
+    }
+
+    private func contains(_ track: AudioTrack) -> Bool {
+        playlist?.items.contains {
+            $0.kind == .track && track.matchesPlaylistReferenceID($0.referenceID)
         } == true
     }
 

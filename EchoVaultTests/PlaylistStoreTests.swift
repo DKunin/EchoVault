@@ -86,6 +86,38 @@ final class PlaylistStoreTests: XCTestCase {
         )
     }
 
+    func testImportCreatesPersistentCopiesWithoutOverwritingMatchingNames() throws {
+        let (userDefaults, suiteName) = try makeUserDefaults()
+        defer { userDefaults.removePersistentDomain(forName: suiteName) }
+        let timestamp = Date(timeIntervalSince1970: 1_900_000_000)
+        let store = PlaylistStore(
+            userDefaults: userDefaults,
+            storageKey: storageKey,
+            now: { timestamp }
+        )
+        _ = try store.createPlaylist(named: "Road Trip")
+        let importedItem = PlaylistItem(draft: .track(makeTrack(title: "First")))
+        let externalPlaylist = MusicPlaylist(
+            name: "Road Trip",
+            items: [importedItem]
+        )
+
+        let firstImportID = try store.importPlaylist(externalPlaylist)
+        let secondImportID = try store.importPlaylist(externalPlaylist)
+
+        let firstImport = try XCTUnwrap(store.playlist(id: firstImportID))
+        let secondImport = try XCTUnwrap(store.playlist(id: secondImportID))
+        XCTAssertEqual(firstImport.name, "Road Trip (Imported)")
+        XCTAssertEqual(secondImport.name, "Road Trip (Imported 2)")
+        XCTAssertNotEqual(firstImport.id, externalPlaylist.id)
+        XCTAssertNotEqual(firstImport.items.first?.id, importedItem.id)
+        XCTAssertEqual(firstImport.createdAt, timestamp)
+        XCTAssertEqual(
+            PlaylistStore(userDefaults: userDefaults, storageKey: storageKey).playlists.count,
+            3
+        )
+    }
+
     private func makeUserDefaults() throws -> (UserDefaults, String) {
         let suiteName = "PlaylistStoreTests-\(UUID().uuidString)"
         return (try XCTUnwrap(UserDefaults(suiteName: suiteName)), suiteName)

@@ -17,12 +17,14 @@
 		200239CBCDFFDED69F2EF8C6 /* PlaylistsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8299439E32BF25F711966E7 /* PlaylistsView.swift */; };
 		22E91EAD798776D636DB8F9F /* PlaylistItemRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 718AF3C605061B89EE6BBFBC /* PlaylistItemRow.swift */; };
 		250783238E7EF3244C74C970 /* DownloadCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63271EA5D3CC942C8FD2A61A /* DownloadCenter.swift */; };
+		2ABE6CB65F0C1E85E0E253F7 /* PlaylistDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75FCB37D538DC12A94A12293 /* PlaylistDocument.swift */; };
 		2AC772D891C2D28A9150B8B8 /* AudioPlayerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05BDF61BDA367D4276DBDD9D /* AudioPlayerTests.swift */; };
 		2F9E6F1A2C0D883E01BE033B /* WebDAVConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B97240E8999EC1411A93791 /* WebDAVConfigurationTests.swift */; };
 		32D4A5CE68CE71B39A1C0138 /* PlaybackStateStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A89C7FD1086EC4041EE7D145 /* PlaybackStateStore.swift */; };
 		42E94F1CE5A83CECA7A733E4 /* AudioMetadataReaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11FC6B02A596A38B22029AFB /* AudioMetadataReaderTests.swift */; };
 		432081E71D991D08C8E227FE /* AudioTrack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B411EE4910CA102AC284261 /* AudioTrack.swift */; };
 		475EDDCE4BF310E2CB11DECE /* LocalMusicStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 150B1643D28E0C3169B5C091 /* LocalMusicStoreTests.swift */; };
+		4E3C1CE8B3EF5FE40686FD08 /* PlaylistDocumentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 115B2075EE7B3D636AE64A7E /* PlaylistDocumentTests.swift */; };
 		4F84DFA6D86F741DBEB90576 /* PlaybackStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CEDF6FE8117A4F96D437FE3 /* PlaybackStateTests.swift */; };
 		52538C0325CB3A3C5FA943C8 /* UserFacingAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFDB2409F5FD0E814C259BE6 /* UserFacingAlert.swift */; };
 		580DF0F3282B34E37539E115 /* WebDAVSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04474961749C8E9EC7CD1C29 /* WebDAVSettings.swift */; };
@@ -80,6 +82,7 @@
 		05BDF61BDA367D4276DBDD9D /* AudioPlayerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerTests.swift; sourceTree = "<group>"; };
 		0AAD2C68D32F77877425B412 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		0E89AB7F62CA4DB20922B34B /* AppShellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppShellView.swift; sourceTree = "<group>"; };
+		115B2075EE7B3D636AE64A7E /* PlaylistDocumentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistDocumentTests.swift; sourceTree = "<group>"; };
 		11FC6B02A596A38B22029AFB /* AudioMetadataReaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioMetadataReaderTests.swift; sourceTree = "<group>"; };
 		150B1643D28E0C3169B5C091 /* LocalMusicStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalMusicStoreTests.swift; sourceTree = "<group>"; };
 		1562B6BFE04CA6739C51F9A9 /* MusicPlaylist.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicPlaylist.swift; sourceTree = "<group>"; };
@@ -107,6 +110,7 @@
 		6CEDF6FE8117A4F96D437FE3 /* PlaybackStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackStateTests.swift; sourceTree = "<group>"; };
 		718AF3C605061B89EE6BBFBC /* PlaylistItemRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistItemRow.swift; sourceTree = "<group>"; };
 		7583BD7D915F1790AF96795C /* QueueContextMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QueueContextMenu.swift; sourceTree = "<group>"; };
+		75FCB37D538DC12A94A12293 /* PlaylistDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistDocument.swift; sourceTree = "<group>"; };
 		817BCC0645E6F320ADA3A5E6 /* test-tone.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = "test-tone.m4a"; sourceTree = "<group>"; };
 		83DA9B38C97B9A7D917741CC /* AppLogoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLogoView.swift; sourceTree = "<group>"; };
 		89AD8091AFBA451576AF4FF0 /* WebDAVBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebDAVBrowserView.swift; sourceTree = "<group>"; };
@@ -184,6 +188,7 @@
 			children = (
 				5B411EE4910CA102AC284261 /* AudioTrack.swift */,
 				1562B6BFE04CA6739C51F9A9 /* MusicPlaylist.swift */,
+				75FCB37D538DC12A94A12293 /* PlaylistDocument.swift */,
 				67456EF26F44EFB533D06F6A /* WebDAVItem.swift */,
 			);
 			path = Models;
@@ -306,6 +311,7 @@
 				150B1643D28E0C3169B5C091 /* LocalMusicStoreTests.swift */,
 				C39F1950B5F07A8029923097 /* MusicAlbumTests.swift */,
 				6CEDF6FE8117A4F96D437FE3 /* PlaybackStateTests.swift */,
+				115B2075EE7B3D636AE64A7E /* PlaylistDocumentTests.swift */,
 				6B48AE58CC7D46E0772A46D9 /* PlaylistStoreTests.swift */,
 				2F5A317B7708835578DAB13E /* WebDAVAuthenticationTests.swift */,
 				6AB2E5BE467B3831CFCB2B2C /* WebDAVClientTests.swift */,
@@ -456,6 +462,7 @@
 				8B051450C1CCF4AA4466ACCF /* PlaylistAddition.swift in Sources */,
 				D5069BC73482A38F0141642A /* PlaylistContentPickerView.swift in Sources */,
 				136341F01641FECE7D1DB2B8 /* PlaylistDetailList.swift in Sources */,
+				2ABE6CB65F0C1E85E0E253F7 /* PlaylistDocument.swift in Sources */,
 				22E91EAD798776D636DB8F9F /* PlaylistItemRow.swift in Sources */,
 				FCCF8BF495F119B78D944933 /* PlaylistStore.swift in Sources */,
 				200239CBCDFFDED69F2EF8C6 /* PlaylistsView.swift in Sources */,
@@ -491,6 +498,7 @@
 				475EDDCE4BF310E2CB11DECE /* LocalMusicStoreTests.swift in Sources */,
 				5E95367B5C312564AE42D22C /* MusicAlbumTests.swift in Sources */,
 				4F84DFA6D86F741DBEB90576 /* PlaybackStateTests.swift in Sources */,
+				4E3C1CE8B3EF5FE40686FD08 /* PlaylistDocumentTests.swift in Sources */,
 				FAED0DC6E95C9CB94AD6577D /* PlaylistStoreTests.swift in Sources */,
 				61E557D69EBD0B3301D45051 /* WebDAVAuthenticationTests.swift in Sources */,
 				F9E8E3188562B9AEB1DB6B86 /* WebDAVClientTests.swift in Sources */,

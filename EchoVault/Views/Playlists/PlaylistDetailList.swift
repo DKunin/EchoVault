@@ -62,14 +62,14 @@ struct PlaylistDetailList: View {
         guard item.kind == .track else {
             return nil
         }
-        return library.tracks.first { $0.id == item.referenceID }
+        return library.tracks.first { $0.matchesPlaylistReferenceID(item.referenceID) }
     }
 
     private func folder(for item: PlaylistItem) -> MusicFolder? {
         guard item.kind == .folder else {
             return nil
         }
-        return library.folders.first { $0.id == item.referenceID }
+        return library.folders.first { $0.matchesPlaylistReferenceID(item.referenceID) }
     }
 }
 
