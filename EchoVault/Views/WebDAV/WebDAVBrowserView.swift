@@ -847,6 +847,7 @@ private struct CachedWebDAVTrackRow: View {
     }
     .environment(WebDAVSettings())
     .environment(MusicLibrary())
+    .environment(PlaylistStore())
     .environment(AudioPlayer())
     .environment(DownloadCenter(library: MusicLibrary()))
 }

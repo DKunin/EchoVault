@@ -46,7 +46,18 @@ struct EchoVaultApp: App {
                 .preferredColorScheme(.dark)
                 .background(EchoVaultTheme.background.ignoresSafeArea())
                 .task {
-                    await library.refresh()
+                    if let rootURL = webDAVSettings.configuration?.rootURL {
+                        do {
+                            let migrations = try await library.reconcileCachedWebDAVURLs(
+                                to: rootURL
+                            )
+                            try playlistStore.rebaseWebDAVReferences(using: migrations)
+                        } catch {
+                            return
+                        }
+                    } else {
+                        await library.refresh()
+                    }
                     guard library.errorMessage == nil else {
                         return
                     }

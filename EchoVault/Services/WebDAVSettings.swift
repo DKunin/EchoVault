@@ -1,6 +1,116 @@
 import Foundation
 import Observation
 
+struct WebDAVEndpointMigration: Hashable, Sendable {
+    let sourceRootURL: URL
+    let destinationRootURL: URL
+
+    func rebasedURL(for candidateURL: URL) -> URL? {
+        guard Self.sameOrigin(candidateURL, sourceRootURL),
+            var candidateComponents = URLComponents(
+                url: candidateURL,
+                resolvingAgainstBaseURL: false
+            ),
+            let destinationComponents = URLComponents(
+                url: destinationRootURL,
+                resolvingAgainstBaseURL: false
+            ),
+            let relativePath = Self.relativePercentEncodedPath(
+                candidateComponents.percentEncodedPath,
+                within: sourceRootURL
+            )
+        else {
+            return nil
+        }
+
+        candidateComponents.scheme = destinationComponents.scheme?.lowercased()
+        candidateComponents.host = destinationComponents.host?.lowercased()
+        candidateComponents.port = destinationComponents.port
+        candidateComponents.user = nil
+        candidateComponents.password = nil
+        candidateComponents.percentEncodedPath = Self.joinedPercentEncodedPath(
+            rootURL: destinationRootURL,
+            relativePath: relativePath
+        )
+        guard let rebasedURL = candidateComponents.url, rebasedURL != candidateURL else {
+            return nil
+        }
+        return rebasedURL
+    }
+
+    static func inferredSourceRoot(
+        for candidateURL: URL,
+        destinationRootURL: URL
+    ) -> URL? {
+        guard
+            var components = URLComponents(
+                url: destinationRootURL,
+                resolvingAgainstBaseURL: false
+            )
+        else {
+            return nil
+        }
+        components.scheme = candidateURL.scheme?.lowercased()
+        components.host = candidateURL.host?.lowercased()
+        components.port = candidateURL.port
+        components.user = nil
+        components.password = nil
+        return components.url
+    }
+
+    private static func relativePercentEncodedPath(
+        _ candidatePath: String,
+        within rootURL: URL
+    ) -> String? {
+        let rootPath = normalizedRootPath(rootURL)
+        if candidatePath == String(rootPath.dropLast()) {
+            return ""
+        }
+        guard candidatePath.hasPrefix(rootPath) else {
+            return nil
+        }
+        return String(candidatePath.dropFirst(rootPath.count))
+    }
+
+    private static func joinedPercentEncodedPath(
+        rootURL: URL,
+        relativePath: String
+    ) -> String {
+        normalizedRootPath(rootURL) + relativePath
+    }
+
+    private static func normalizedRootPath(_ url: URL) -> String {
+        var path = URLComponents(url: url, resolvingAgainstBaseURL: false)?.percentEncodedPath ?? "/"
+        if path.isEmpty {
+            path = "/"
+        }
+        if !path.hasSuffix("/") {
+            path.append("/")
+        }
+        return path
+    }
+
+    private static func sameOrigin(_ lhs: URL, _ rhs: URL) -> Bool {
+        lhs.scheme?.caseInsensitiveCompare(rhs.scheme ?? "") == .orderedSame
+            && lhs.host?.caseInsensitiveCompare(rhs.host ?? "") == .orderedSame
+            && effectivePort(for: lhs) == effectivePort(for: rhs)
+    }
+
+    private static func effectivePort(for url: URL) -> Int? {
+        if let port = url.port {
+            return port
+        }
+        switch url.scheme?.lowercased() {
+        case "http":
+            return 80
+        case "https":
+            return 443
+        default:
+            return nil
+        }
+    }
+}
+
 struct WebDAVConfiguration: Equatable, Sendable {
     enum ValidationError: LocalizedError, Equatable {
         case emptyEndpoint

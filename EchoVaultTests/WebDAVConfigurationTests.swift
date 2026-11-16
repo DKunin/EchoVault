@@ -107,6 +107,32 @@ final class WebDAVConfigurationTests: XCTestCase {
         XCTAssertEqual(configuration.password, "")
     }
 
+    func testEndpointMigrationRebasesOnlyURLsInsideThePreviousRoot() throws {
+        let migration = WebDAVEndpointMigration(
+            sourceRootURL: try XCTUnwrap(URL(string: "http://192.0.2.42:4243/old/")),
+            destinationRootURL: try XCTUnwrap(URL(string: "https://dav.example.com/music/"))
+        )
+
+        XCTAssertEqual(
+            migration.rebasedURL(
+                for: try XCTUnwrap(
+                    URL(string: "http://192.0.2.42:4243/old/Album/Test%20Tone.m4a")
+                )
+            ),
+            try XCTUnwrap(URL(string: "https://dav.example.com/music/Album/Test%20Tone.m4a"))
+        )
+        XCTAssertNil(
+            migration.rebasedURL(
+                for: try XCTUnwrap(URL(string: "http://192.0.2.42:4243/old-other/Track.m4a"))
+            )
+        )
+        XCTAssertNil(
+            migration.rebasedURL(
+                for: try XCTUnwrap(URL(string: "http://other.example.com/old/Track.m4a"))
+            )
+        )
+    }
+
     func testConnectionErrorsProvideActionableGuidance() {
         XCTAssertEqual(
             WebDAVConnectionErrorMessage.message(for: WebDAVClient.ClientError.authenticationRequired),

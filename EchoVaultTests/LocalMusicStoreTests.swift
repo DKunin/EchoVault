@@ -55,6 +55,57 @@ final class LocalMusicStoreTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: cachedTrack.localURL.path))
     }
 
+    @MainActor
+    func testReconcilesDownloadedTrackAfterWebDAVOriginChanges() async throws {
+        let fixtureURL = try XCTUnwrap(
+            Bundle(for: Self.self).url(forResource: "test-tone", withExtension: "m4a")
+        )
+        let rootURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("EchoVaultReconcileTests-\(UUID().uuidString)", isDirectory: true)
+        let store = LocalMusicStore(rootURL: rootURL)
+        let oldRemoteURL = try XCTUnwrap(
+            URL(string: "http://192.0.2.42:4243/music/Album/Test%20Tone.m4a")
+        )
+        let oldItem = WebDAVItem(
+            name: "Test Tone.m4a",
+            url: oldRemoteURL,
+            isDirectory: false,
+            contentLength: 9_000,
+            lastModified: nil,
+            eTag: "\"fixture\""
+        )
+        let cachedSnapshot = try await store.cacheDownloadedFile(at: fixtureURL, for: oldItem)
+        let originalLocalURL = try XCTUnwrap(cachedSnapshot.tracks.first?.localURL)
+        let library = MusicLibrary(store: store)
+        let newRootURL = try XCTUnwrap(URL(string: "https://dav.example.com/music/"))
+
+        let migrations = try await library.reconcileCachedWebDAVURLs(to: newRootURL)
+
+        let newRemoteURL = try XCTUnwrap(
+            URL(string: "https://dav.example.com/music/Album/Test%20Tone.m4a")
+        )
+        let newItem = WebDAVItem(
+            name: oldItem.name,
+            url: newRemoteURL,
+            isDirectory: false,
+            contentLength: oldItem.contentLength,
+            lastModified: nil,
+            eTag: oldItem.eTag
+        )
+        XCTAssertEqual(migrations.count, 1)
+        XCTAssertEqual(library.cachedTrack(matching: newItem)?.localURL, originalLocalURL)
+        XCTAssertTrue(
+            library.isFolderDownloaded(
+                at: try XCTUnwrap(URL(string: "https://dav.example.com/music/Album/"))
+            )
+        )
+        XCTAssertTrue(FileManager.default.fileExists(atPath: originalLocalURL.path))
+
+        let reloadedSnapshot = try await store.loadLibrary()
+        XCTAssertEqual(reloadedSnapshot.cachedRecords.first?.remoteURL, newRemoteURL)
+        XCTAssertEqual(reloadedSnapshot.tracks.first?.localURL, originalLocalURL)
+    }
+
     func testLibrarySizeIncludesImportedAndDownloadedAudio() async throws {
         let fixtureURL = try XCTUnwrap(
             Bundle(for: Self.self).url(forResource: "test-tone", withExtension: "m4a")

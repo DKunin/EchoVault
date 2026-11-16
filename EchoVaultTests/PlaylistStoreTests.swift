@@ -86,6 +86,45 @@ final class PlaylistStoreTests: XCTestCase {
         )
     }
 
+    func testRebasesWebDAVPlaylistReferencesWithEndpointMigration() throws {
+        let (userDefaults, suiteName) = try makeUserDefaults()
+        defer { userDefaults.removePersistentDomain(forName: suiteName) }
+        let store = PlaylistStore(userDefaults: userDefaults, storageKey: storageKey)
+        let playlistID = try store.createPlaylist(named: "Migrated")
+        let oldRemoteURL = try XCTUnwrap(
+            URL(string: "http://192.0.2.42:4243/old/Album/Track.m4a")
+        )
+        let oldTrack = makeWebDAVTrack(remoteURL: oldRemoteURL)
+        let oldFolder = MusicFolder(groupingKey: "old-folder", tracks: [oldTrack])
+        _ = try store.add([.track(oldTrack), .folder(oldFolder)], to: playlistID)
+        let migration = WebDAVEndpointMigration(
+            sourceRootURL: try XCTUnwrap(URL(string: "http://192.0.2.42:4243/old/")),
+            destinationRootURL: try XCTUnwrap(URL(string: "https://dav.example.com/music/"))
+        )
+
+        try store.rebaseWebDAVReferences(using: [migration])
+
+        let newRemoteURL = try XCTUnwrap(
+            URL(string: "https://dav.example.com/music/Album/Track.m4a")
+        )
+        let newTrack = makeWebDAVTrack(remoteURL: newRemoteURL)
+        let newFolder = MusicFolder(groupingKey: "new-folder", tracks: [newTrack])
+        let playlist = try XCTUnwrap(store.playlist(id: playlistID))
+        XCTAssertEqual(
+            playlist.items.map(\.referenceID),
+            [newTrack.playlistReferenceID, newFolder.playlistReferenceID]
+        )
+        XCTAssertEqual(
+            playlist.resolvedTracks(availableTracks: [newTrack], availableFolders: [newFolder]),
+            [newTrack]
+        )
+        XCTAssertEqual(
+            PlaylistStore(userDefaults: userDefaults, storageKey: storageKey)
+                .playlist(id: playlistID)?.items,
+            playlist.items
+        )
+    }
+
     func testImportCreatesPersistentCopiesWithoutOverwritingMatchingNames() throws {
         let (userDefaults, suiteName) = try makeUserDefaults()
         defer { userDefaults.removePersistentDomain(forName: suiteName) }
@@ -134,6 +173,18 @@ final class PlaylistStoreTests: XCTestCase {
             filename: "\(title).m4a",
             localURL: URL(fileURLWithPath: "/tmp/\(title).m4a"),
             origin: .imported
+        )
+    }
+
+    private func makeWebDAVTrack(remoteURL: URL) -> AudioTrack {
+        AudioTrack(
+            title: "Track",
+            folderName: "Album",
+            folderIdentifier: remoteURL.deletingLastPathComponent().absoluteString,
+            filename: remoteURL.lastPathComponent,
+            localURL: URL(fileURLWithPath: "/tmp/\(UUID().uuidString).m4a"),
+            origin: .webDAV,
+            remoteURL: remoteURL
         )
     }
 }

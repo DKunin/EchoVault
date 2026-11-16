@@ -60,6 +60,26 @@ final class MusicLibrary {
         }
     }
 
+    func reconcileCachedWebDAVURLs(
+        to destinationRootURL: URL,
+        from previousRootURL: URL? = nil
+    ) async throws -> [WebDAVEndpointMigration] {
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            let reconciliation = try await store.reconcileCachedWebDAVURLs(
+                to: destinationRootURL,
+                from: previousRootURL
+            )
+            apply(reconciliation.snapshot)
+            errorMessage = nil
+            return reconciliation.migrations
+        } catch {
+            errorMessage = error.localizedDescription
+            throw error
+        }
+    }
+
     func importFiles(_ urls: [URL]) async throws -> MusicImportResult {
         isImporting = true
         defer { isImporting = false }

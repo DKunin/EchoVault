@@ -76,6 +76,11 @@ struct MusicLibrarySnapshot: Sendable {
     let librarySizeBytes: Int64
 }
 
+struct WebDAVCacheReconciliation: Sendable {
+    let snapshot: MusicLibrarySnapshot
+    let migrations: [WebDAVEndpointMigration]
+}
+
 struct LocalMusicImportResult: Sendable {
     let snapshot: MusicLibrarySnapshot
     let skippedCount: Int
@@ -163,6 +168,69 @@ actor LocalMusicStore {
     func loadLibrary() async throws -> MusicLibrarySnapshot {
         try prepareStorage()
         return try await makeSnapshot()
+    }
+
+    func reconcileCachedWebDAVURLs(
+        to destinationRootURL: URL,
+        from previousRootURL: URL? = nil
+    ) async throws -> WebDAVCacheReconciliation {
+        try prepareStorage()
+        let records = try loadCacheManifest()
+        var proposedRecords: [(record: CachedTrackRecord, migration: WebDAVEndpointMigration?)] = []
+
+        for record in records {
+            let explicitMigration = previousRootURL.map {
+                WebDAVEndpointMigration(
+                    sourceRootURL: $0,
+                    destinationRootURL: destinationRootURL
+                )
+            }
+            let inferredMigration = WebDAVEndpointMigration.inferredSourceRoot(
+                for: record.remoteURL,
+                destinationRootURL: destinationRootURL
+            ).map {
+                WebDAVEndpointMigration(
+                    sourceRootURL: $0,
+                    destinationRootURL: destinationRootURL
+                )
+            }
+            let migration = [explicitMigration, inferredMigration]
+                .compactMap { $0 }
+                .first { $0.rebasedURL(for: record.remoteURL) != nil }
+            guard let migration,
+                let rebasedURL = migration.rebasedURL(for: record.remoteURL)
+            else {
+                proposedRecords.append((record, nil))
+                continue
+            }
+            proposedRecords.append((record.replacingRemoteURL(with: rebasedURL), migration))
+        }
+
+        let proposalsByRemoteURL = Dictionary(grouping: proposedRecords, by: \.record.remoteURL)
+        var reconciledRecords: [CachedTrackRecord] = []
+        var appliedMigrations = Set<WebDAVEndpointMigration>()
+        for proposal in proposedRecords {
+            guard proposalsByRemoteURL[proposal.record.remoteURL]?.count == 1 else {
+                let originalRecord = records[reconciledRecords.count]
+                reconciledRecords.append(originalRecord)
+                continue
+            }
+            reconciledRecords.append(proposal.record)
+            if let migration = proposal.migration {
+                appliedMigrations.insert(migration)
+            }
+        }
+
+        reconciledRecords.sort { $0.remoteURL.absoluteString < $1.remoteURL.absoluteString }
+        if reconciledRecords != records {
+            try saveCacheManifest(reconciledRecords)
+        }
+        return WebDAVCacheReconciliation(
+            snapshot: try await makeSnapshot(),
+            migrations: appliedMigrations.sorted {
+                $0.sourceRootURL.absoluteString < $1.sourceRootURL.absoluteString
+            }
+        )
     }
 
     func importFiles(_ urls: [URL]) async throws -> LocalMusicImportResult {
@@ -880,6 +948,19 @@ actor LocalMusicStore {
             try? fileManager.removeItem(at: currentURL)
             currentURL.deleteLastPathComponent()
         }
+    }
+}
+
+private extension CachedTrackRecord {
+    func replacingRemoteURL(with remoteURL: URL) -> CachedTrackRecord {
+        CachedTrackRecord(
+            remoteURL: remoteURL,
+            localFilename: localFilename,
+            displayFilename: displayFilename,
+            downloadedAt: downloadedAt,
+            eTag: eTag,
+            contentLength: contentLength
+        )
     }
 }
 

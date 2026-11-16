@@ -207,6 +207,45 @@ final class PlaylistStore {
         try save(updatedPlaylists)
     }
 
+    func rebaseWebDAVReferences(using migrations: [WebDAVEndpointMigration]) throws {
+        guard !migrations.isEmpty else {
+            return
+        }
+        var updatedPlaylists = playlists
+        var didChange = false
+        for playlistIndex in updatedPlaylists.indices {
+            updatedPlaylists[playlistIndex].items = updatedPlaylists[playlistIndex].items.map { item in
+                guard
+                    let rebasedReferenceID = Self.rebasedReferenceID(
+                        item.referenceID,
+                        using: migrations
+                    )
+                else {
+                    return item
+                }
+                didChange = true
+                return PlaylistItem(
+                    id: item.id,
+                    draft: PlaylistItemDraft(
+                        kind: item.kind,
+                        referenceID: rebasedReferenceID,
+                        title: item.title,
+                        subtitle: item.subtitle
+                    )
+                )
+            }
+        }
+        guard didChange else {
+            return
+        }
+        do {
+            try save(updatedPlaylists)
+        } catch {
+            errorMessage = "Saved playlists could not be updated for the new WebDAV address."
+            throw error
+        }
+    }
+
     private func validatedName(_ proposedName: String) throws -> String {
         let name = proposedName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else {
@@ -248,6 +287,24 @@ final class PlaylistStore {
             $0.name.compare(name, options: [.caseInsensitive, .diacriticInsensitive])
                 == .orderedSame
         }
+    }
+
+    private static func rebasedReferenceID(
+        _ referenceID: String,
+        using migrations: [WebDAVEndpointMigration]
+    ) -> String? {
+        let prefixes = ["webdav-track:", "webdav-folder:"]
+        let prefix = prefixes.first { referenceID.hasPrefix($0) }
+        let urlString = prefix.map { String(referenceID.dropFirst($0.count)) } ?? referenceID
+        guard let url = URL(string: urlString),
+            url.scheme?.lowercased() == "http" || url.scheme?.lowercased() == "https"
+        else {
+            return nil
+        }
+        guard let rebasedURL = migrations.lazy.compactMap({ $0.rebasedURL(for: url) }).first else {
+            return nil
+        }
+        return (prefix ?? "") + rebasedURL.absoluteString
     }
 
     private func save(_ updatedPlaylists: [MusicPlaylist]) throws {

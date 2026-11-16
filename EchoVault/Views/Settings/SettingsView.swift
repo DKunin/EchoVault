@@ -136,6 +136,9 @@ private enum ConnectionStatus: Equatable {
 }
 
 private struct WebDAVSettingsForm: View {
+    @Environment(MusicLibrary.self) private var library
+    @Environment(PlaylistStore.self) private var playlistStore
+
     let settings: WebDAVSettings
     let connected: () -> Void
 
@@ -267,12 +270,18 @@ private struct WebDAVSettingsForm: View {
             )
             try await WebDAVClient(configuration: configuration).checkConnection()
             try Task.checkCancellation()
+            let previousRootURL = settings.configuration?.rootURL
             try settings.save(
                 endpoint: endpoint,
                 username: username,
                 password: password,
                 allowsInsecureHTTP: allowsInsecureHTTP
             )
+            let migrations = try await library.reconcileCachedWebDAVURLs(
+                to: configuration.rootURL,
+                from: previousRootURL
+            )
+            try playlistStore.rebaseWebDAVReferences(using: migrations)
             endpoint = settings.endpoint
             allowsInsecureHTTP = settings.allowsInsecureHTTP
             status = .success("Connected. Your music is ready to browse.")
@@ -292,5 +301,6 @@ private struct WebDAVSettingsForm: View {
     }
     .environment(WebDAVSettings())
     .environment(library)
+    .environment(PlaylistStore())
     .environment(AudioPlayer())
 }
